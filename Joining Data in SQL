@@ -1,0 +1,1249 @@
+Inner join
+Although this course focuses on PostgreSQL, you'll find that these joins and the material here applies to different forms of SQL as well.
+
+Throughout this course, you'll be working with the countries database containing information about the most populous world cities as well as country-level economic data, population data, and geographic data. This countries database also contains information on languages spoken in each country.
+
+You can see the different tables in this database by clicking on the corresponding tabs. Click through them to get a sense for the types of data that each table contains before you continue with the course! Take note of the fields that appear to be shared across the tables.
+
+Recall from the video the basic syntax for an INNER JOIN, here including all columns in both tables:
+
+SELECT *
+FROM left_table
+INNER JOIN right_table
+ON left_table.id = right_table.id;
+You'll start off with a SELECT statement and then build up to an INNER JOIN with the cities and countries tables. Let's get to it!
+
+Begin by selecting all columns from the cities table.
+-- Select all columns from cities
+Select * FROM cities
+
+Inner join the cities table on the left to the countries table on the right, keeping all of the fields in both tables.
+You should match the tables on the country_code field in cities and the code field in countries.
+Do not alias your tables here or in the next step. Using cities and countries is fine for now.
+
+SELECT * 
+FROM cities
+  -- Inner join to countries
+  INNER JOIN countries
+    -- Match on the country codes
+    ON cities.country_code = countries.code;
+    
+ Modify the SELECT statement to keep only the name of the city, the name of the country, and the name of the region the country resides in.
+Alias the name of the city AS city and the name of the country AS country.
+
+-- Select name fields (with alias) and region 
+SELECT cities.name AS city, countries.name AS country, region
+FROM cities
+  INNER JOIN countries
+    ON cities.country_code = countries.code;
+    
+Inner join (2)
+Instead of writing the full table name, you can use table aliasing as a shortcut. For tables you also use AS to add the alias immediately after the table name with a space. Check out the aliasing of cities and countries below.
+
+SELECT c1.name AS city, c2.name AS country
+FROM cities AS c1
+INNER JOIN countries AS c2
+ON c1.country_code = c2.code;
+Notice that to select a field in your query that appears in multiple tables, you'll need to identify which table/table alias you're referring to by using a . in your SELECT statement.
+
+You'll now explore a way to get data from both the countries and economies tables to examine the inflation rate for both 2010 and 2015.
+
+Sometimes it's easier to write SQL code out of order: you write the SELECT statement after you've done the JOIN.
+
+Join the tables countries (left) and economies (right) aliasing countries AS c and economies AS e.
+Specify the field to match the tables ON.
+From this join, SELECT:
+c.code, aliased as country_code.
+name, year, and inflation_rate, not aliased.
+
+-- Select fields with aliases
+SELECT c.code AS country_code, name, year, inflation_rate
+FROM countries AS c
+  -- Join to economies (alias e)
+  INNER JOIN economies AS e
+    -- Match on code
+    ON c.code = e.code;
+    
+Inner join (3)
+The ability to combine multiple joins in a single query is a powerful feature of SQL, e.g:
+
+SELECT *
+FROM left_table
+  INNER JOIN right_table
+    ON left_table.id = right_table.id
+  INNER JOIN another_table
+    ON left_table.id = another_table.id;
+As you can see here it becomes tedious to continually write long table names in joins. This is when it becomes useful to alias each table using the first letter of its name (e.g. countries AS c)! It is standard practice to alias in this way and, if you choose to alias tables or are asked to specifically for an exercise in this course, you should follow this protocol.
+
+Now, for each country, you want to get the country name, its region, the fertility rate, and the unemployment rate for both 2010 and 2015.
+
+Note that results should work throughout this course with or without table aliasing unless specified differently.
+
+Inner join countries (left) and populations (right) on the code and country_code fields respectively.
+Alias countries AS c and populations AS p.
+Select code, name, and region from countries and also select year and fertility_rate from populations (5 fields in total).
+
+-- Select fields
+Select c.code, c.name, c. region, p.year,p.fertility_rate
+  -- From countries (alias as c)
+FROM countries AS c
+  -- Join with populations (as p)
+INNER JOIN populations AS p
+    -- Match on country code
+ON c.code = p.country_code;
+
+Add an additional INNER JOIN with economies to your previous query by joining on code.
+Include the unemployment_rate column that became available through joining with economies.
+Note that year appears in both populations and economies, so you have to explicitly use e.year instead of year as you did before.
+
+-- Select fields
+SELECT c.code, name, region, e.year, fertility_rate, unemployment_rate
+  -- From countries (alias as c)
+  FROM countries AS c
+  -- Join to populations (as p)
+  INNER JOIN populations AS p
+    -- Match on country code
+    ON c.code = p.country_code
+  -- Join to economies (as e)
+INNER JOIN economies AS e
+    -- Match on country code
+ON c.code = e.code
+
+Scroll down the query result and take a look at the results for Albania from your previous query. Does something seem off to you?
+The trouble with doing your last join on c.code = e.code and not also including year is that e.g. the 2010 value for fertility_rate is also paired with the 2015 value for unemployment_rate.
+Fix your previous query: in your last ON clause, use AND to add an additional joining condition. In addition to joining on code in c and e, also join on year in e and p
+
+-- Select fields
+SELECT c.code, name, region, e.year, fertility_rate, unemployment_rate
+  -- From countries (alias as c)
+  FROM countries AS c
+  -- Join to populations (as p)
+  INNER JOIN populations AS p
+    -- Match on country code
+    ON c.code = p.country_code
+  -- Join to economies (as e)
+  INNER JOIN economies AS e
+    -- Match on country code and year
+  ON c.code = e.code AND e.year = p.year;
+  
+Inner join with using
+When joining tables with a common field name, e.g.
+
+SELECT *
+FROM countries
+  INNER JOIN economies
+    ON countries.code = economies.code
+You can use USING as a shortcut:
+
+SELECT *
+FROM countries
+  INNER JOIN economies
+    USING(code)
+You'll now explore how this can be done with the countries and languages tables.
+
+Inner join countries on the left and languages on the right with USING(code).
+Select the fields corresponding to:
+country name AS country,
+continent name,
+language name AS language, and
+whether or not the language is official.
+Remember to alias your tables using the first letter of their names.
+
+-- Select fields
+Select c.name AS country, continent, l.name AS language, official
+  -- From countries (alias as c)
+  FROM countries AS c
+  -- Join to languages (as l)
+  INNER JOIN languages AS l
+    -- Match using code
+   USING(code);
+   
+Self-join
+In this exercise, you'll use the populations table to perform a self-join to calculate the percentage increase in population from 2010 to 2015 for each country code!
+
+Since you'll be joining the populations table to itself, you can alias populations as p1 and also populations as p2. This is good practice whenever you are aliasing and your tables have the same first letter. Note that you are required to alias the tables with self-joins.
+
+Join populations with itself ON country_code.
+Select the country_code from p1 and the size field from both p1 and p2. SQL won't allow same-named fields, so alias p1.size as size2010 and p2.size as size2015.
+
+-- Select fields with aliases
+SELECT p1.country_code, p1.size AS size2010, p2.size AS size2015 
+FROM populations AS p1
+INNER JOIN populations AS p2
+ON p1.country_code = p2.country_code;
+
+Notice from the result that for each country_code you have four entries laying out all combinations of 2010 and 2015.
+Extend the ON in your query to include only those records where the p1.year (2010) matches with p2.year - 5 (2015 - 5 = 2010). This will omit the three entries per country_code that you aren't interested in.
+
+-- Select fields with aliases
+SELECT p1.country_code,
+       p1.size AS size2010,
+       p2.size AS size2015
+-- From populations (alias as p1)
+FROM populations as p1
+  -- Join to itself (alias as p2)
+  INNER JOIN populations as p2
+    -- Match on country code
+    ON p1.country_code = p2.country_code AND (p1.year = p2.year - 5);
+        -- and year (with calculation)
+As you just saw, you can also use SQL to calculate values like p2.year - 5 for you. With two fields like size2010 and size2015, you may want to determine the percentage increase from one field to the next:
+
+With two numeric fields A and B, the percentage growth from A to B can be calculated as (B-A)/A * 100.
+Add a new field to SELECT, aliased as growth_perc, that calculates the percentage population growth from 2010 to 2015 for each country, using p2.size and p1.size.
+
+-- Select fields with aliases
+SELECT p1.country_code,
+       p1.size AS size2010, 
+       p2.size AS size2015,
+       -- Calculate growth_perc
+       ((p2.size - p1.size)/p1.size * 100.0) AS growth_perc
+-- From populations (alias as p1)
+FROM populations AS p1
+  -- Join to itself (alias as p2)
+  INNER JOIN populations AS p2
+    -- Match on country code
+    ON p1.country_code = p2.country_code
+        -- and year (with calculation)
+        AND p1.year = p2.year - 5;
+        
+Case when and then
+Often it's useful to look at a numerical field not as raw data, but instead as being in different categories or groups.
+
+You can use CASE with WHEN, THEN, ELSE, and END to define a new grouping field.
+
+Using the countries table, create a new field AS geosize_group that groups the countries into three groups:
+
+If surface_area is greater than 2 million, geosize_group is 'large'.
+If surface_area is greater than 350 thousand but not larger than 2 million, geosize_group is 'medium'.
+Otherwise, geosize_group is 'small'.
+
+SELECT name, continent, code, surface_area,
+    -- First case
+    CASE WHEN surface_area > 2000000 THEN 'large'
+        -- Second case
+        WHEN surface_area > 350000 THEN 'medium'
+        -- Else clause + end
+        ELSE 'small' END
+        -- Alias name
+        AS geosize_group
+-- From table
+FROM countries;
+
+Inner challenge
+The table you created with the added geosize_group field has been loaded for you here with the name countries_plus. Observe the use of (and the placement of) the INTO command to create this countries_plus table:
+
+SELECT name, continent, code, surface_area,
+    CASE WHEN surface_area > 2000000
+            THEN 'large'
+       WHEN surface_area > 350000
+            THEN 'medium'
+       ELSE 'small' END
+       AS geosize_group
+INTO countries_plus
+FROM countries;
+You will now explore the relationship between the size of a country in terms of surface area and in terms of population using grouping fields created with CASE.
+
+By the end of this exercise, you'll be writing two queries back-to-back in a single script. You got this!
+
+Using the populations table focused only for the year 2015, create a new field aliased as popsize_group to organize population size into
+
+'large' (> 50 million),
+'medium' (> 1 million), and
+'small' groups.
+Select only the country code, population size, and this new popsize_group as fields.
+
+SELECT country_code, size,
+    -- First case
+    CASE WHEN size > 50000000 THEN 'large'
+        -- Second case
+        WHEN size > 1000000 THEN 'medium'
+        -- Else clause + end
+        ELSE 'small' END
+        -- Alias name (popsize_group)
+        AS popsize_group
+-- From table
+FROM populations
+-- Focus on 2015
+WHERE  year = 2015;
+
+Use INTO to save the result of the previous query as pop_plus. You can see an example of this in the countries_plus code in the assignment text. Make sure to include a ; at the end of your WHERE clause!
+
+Then, include another query below your first query to display all the records in pop_plus using SELECT * FROM pop_plus; so that you generate results and this will display pop_plus in the query result.
+
+SELECT country_code, size,
+    CASE WHEN size > 50000000 THEN 'large'
+        WHEN size > 1000000 THEN 'medium'
+        ELSE 'small' END
+        AS popsize_group
+-- Into table
+INTO pop_plus
+FROM populations
+WHERE year = 2015;
+
+-- Select all columns of pop_plus
+SELECT * FROM pop_plus;
+
+Keep the first query intact that creates pop_plus using INTO.
+Write a query to join countries_plus AS c on the left with pop_plus AS p on the right matching on the country code fields.
+Sort the data based on geosize_group, in ascending order so that large appears on top.
+Select the name, continent, geosize_group, and popsize_group fields.
+
+SELECT country_code, size,
+  CASE WHEN size > 50000000
+            THEN 'large'
+       WHEN size > 1000000
+            THEN 'medium'
+       ELSE 'small' END
+       AS popsize_group
+INTO pop_plus       
+FROM populations
+WHERE year = 2015;
+
+-- Select fields
+SELECT name, continent, geosize_group, popsize_group
+-- From countries_plus (alias as c)
+FROM countries_plus AS c
+  -- Join to pop_plus (alias as p)
+INNER JOIN pop_plus as p
+    -- Match on country code
+ON c.code = p.country_code
+-- Order the table    
+ORDER BY geosize_group;
+
+Left Join
+Now you'll explore the differences between performing an inner join and a left join using the cities and countries tables.
+
+You'll begin by performing an inner join with the cities table on the left and the countries table on the right. Remember to alias the name of the city field as city and the name of the country field as country.
+
+You will then change the query to a left join. Take note of how many records are in each query here!
+
+Fill in the code based on the instructions in the code comments to complete the inner join. Note how many records are in the result of the join in the query result.
+
+-- Select the city name (with alias), the country code,
+-- the country name (with alias), the region,
+-- and the city proper population
+SELECT c1.name AS country, code, c2.name AS city,
+       region, city_proper_pop
+-- From left table (with alias)
+FROM countries AS c1
+  -- Join to right table (with alias)
+ INNER JOIN cities AS c2
+    -- Match on country code
+    ON c1.code = c2.country_code
+-- Order by descending country code
+ORDER BY code DESC;
+
+Change the code to perform a LEFT JOIN instead of an INNER JOIN. After executing this query, note how many records the query result contains.
+
+SELECT c1.name AS city, code, c2.name AS country,
+       region, city_proper_pop
+FROM cities AS c1
+  -- Join right table (with alias)
+LEFT JOIN countries AS c2
+    -- Match on country code
+    ON c1.country_code = c2.code
+-- Order by descending country code
+ORDER BY code DESC;
+
+Left join (2)
+Next, you'll try out another example comparing an inner join to its corresponding left join. Before you begin though, take note of how many records are in both the countries and languages tables below.
+
+You will begin with an inner join on the countries table on the left with the languages table on the right. Then you'll change the code to a left join in the next bullet.
+
+Note the use of multi-line comments here using /* and */.
+
+Perform an inner join and alias the name of the country field as country and the name of the language field as language.
+Sort based on descending country name.
+
+/*
+Select country name AS country, the country's local name,
+the language name AS language, and
+the percent of the language spoken in the country
+*/
+Select c.name AS country, local_name, l.name AS language, percent
+-- From left table (alias as c)
+FROM countries AS c
+  -- Join to right table (alias as l)
+  INNER JOIN languages AS l
+    -- Match on fields
+    ON c.code = l.code
+-- Order by descending country
+ORDER BY country DESC;
+
+Perform a left join instead of an inner join. Observe the result, and also note the change in the number of records in the result.
+Carefully review which records appear in the left join result, but not in the inner join result.
+
+/*
+Select country name AS country, the country's local name,
+the language name AS language, and
+the percent of the language spoken in the country
+*/
+SELECT c.name AS country, local_name, l.name AS language, percent
+-- From left table (alias as c)
+FROM countries AS c
+  -- Join to right table (alias as l)
+LEFT JOIN languages AS l
+    -- Match on fields
+    ON c.code = l.code
+-- Order by descending country
+ORDER BY country DESC;
+
+Left join (3)
+You'll now revisit the use of the AVG() function introduced in our introductory SQL course. You will use it in combination with left join to determine the average gross domestic product (GDP) per capita by region in 2010.
+
+Begin with a left join with the countries table on the left and the economies table on the right.
+Focus only on records with 2010 as the year.
+
+-- Select name, region, and gdp_percapita
+SELECT name, region, gdp_percapita
+-- From countries (alias as c)
+FROM countries AS c
+  -- Left join with economies (alias as e)
+  LEFT JOIN economies AS e
+    -- Match on code fields
+    ON c.code = e.code
+-- Focus on 2010
+WHERE year = 2010;
+
+Modify your code to calculate the average GDP per capita AS avg_gdp for each region in 2010.
+Select the region and avg_gdp fields.
+
+-- Select fields
+SELECT region, AVG(gdp_percapita) AS avg_gdp
+-- From countries (alias as c)
+FROM countries AS c
+  -- Left join with economies (alias as e)
+  LEFT JOIN economies AS e
+    -- Match on code fields
+    ON c.code = e.code
+-- Focus on 2010
+WHERE year = 2010
+-- Group by region
+GROUP BY region;
+
+Arrange this data on average GDP per capita for each region in 2010 from highest to lowest average GDP per capita.
+
+-- Select fields
+SELECT region, AVG(gdp_percapita) AS avg_gdp
+-- From countries (alias as c)
+FROM countries as c
+  -- Left join with economies (alias as e)
+LEFT JOIN economies AS e
+    -- Match on code fields
+ON c.code = e.code
+-- Focus on 2010
+WHERE year = 2010
+-- Group by region
+GROUP BY region
+-- Order by descending avg_gdp
+ORDER BY avg_gdp DESC;
+
+Right join
+Right joins aren't as common as left joins. One reason why is that you can always write a right join as a left join.
+
+The left join code is commented out here. Your task is to write a new query using rights joins that produces the same result as what the query using left joins produces. Keep this left joins code commented as you write your own query just below it using right joins to solve the problem.
+
+Note the order of the joins matters in your conversion to using right joins!
+
+-- convert this code to use RIGHT JOINs instead of LEFT JOINs
+/*
+SELECT cities.name AS city, urbanarea_pop, countries.name AS country,
+       indep_year, languages.name AS language, percent
+FROM cities
+  LEFT JOIN countries
+    ON cities.country_code = countries.code
+  LEFT JOIN languages
+    ON countries.code = languages.code
+ORDER BY city, language;
+*/
+
+SELECT cities.name AS city, urbanarea_pop, countries.name AS country,
+       indep_year, languages.name AS language, percent
+FROM languages
+  RIGHT JOIN countries
+    ON languages.code = countries.code
+  RIGHT JOIN cities
+    ON  countries.code = cities.country_code
+ORDER BY city, language;
+
+Full join
+In this exercise, you'll examine how your results differ when using a full join versus using a left join versus using an inner join with the countries and currencies tables.
+
+You will focus on the North American region and also where the name of the country is missing. Dig in to see what we mean!
+
+Begin with a full join with countries on the left and currencies on the right. The fields of interest have been SELECTed for you throughout this exercise.
+
+Then complete a similar left join and conclude with an inner join.
+
+Choose records in which region corresponds to North America or is NULL.
+
+SELECT name AS country, code, region, basic_unit
+-- From countries
+FROM countries
+  -- Join to currencies
+  FULL JOIN currencies
+    -- Match on code
+    USING (code)
+-- Where region is North America or null
+WHERE region = 'North America' OR  region IS NULL
+-- Order by region
+ORDER BY region;
+
+Repeat the same query as before, using a LEFT JOIN instead of a FULL JOIN. Note what has changed compared to the FULL JOIN result!
+SELECT name AS country, code, region, basic_unit
+-- From countries
+FROM countries
+  -- Join to currencies
+LEFT Join currencies
+    -- Match on code
+USING (code)
+-- Where region is North America or null
+WHERE region = 'North America' OR region IS NULL
+-- Order by region
+ORDER BY region;
+
+Repeat the same query again but use an INNER JOIN instead of a FULL JOIN. Note what has changed compared to the FULL JOIN and LEFT JOIN results!
+
+SELECT name AS country, code, region, basic_unit
+-- From countries
+FROM countries
+  -- Join to currencies
+INNER JOIN currencies
+    -- Match on code
+    USING (code)
+-- Where region is North America or null
+WHERE region = 'North America' OR region IS NULL
+-- Order by region
+ORDER BY region;
+
+Full join (2)
+You'll now investigate a similar exercise to the last one, but this time focused on using a table with more records on the left than the right. You'll work with the languages and countries tables.
+
+Begin with a full join with languages on the left and countries on the right. Appropriate fields have been selected for you again here.
+
+Choose records in which countries.name starts with the capital letter 'V' or is NULL.
+Arrange by countries.name in ascending order to more clearly see the results.
+
+SELECT countries.name, code, languages.name AS language
+-- From languages
+FROM languages
+  -- Join to countries
+FULL JOIN countries
+    -- Match on code
+    USING (code)
+-- Where countries.name starts with V or is null
+WHERE countries.name LIKE 'V%' OR countries.name IS NULL
+-- Order by ascending countries.name
+ORDER BY countries.name;
+
+Repeat the same query as before, using a LEFT JOIN instead of a FULL JOIN. Note what has changed compared to the FULL JOIN result!
+
+SELECT countries.name, code, languages.name AS language
+-- From languages
+FROM languages
+  -- Join to countries
+LEFT Join countries
+    -- Match on code
+    USING (code)
+-- Where countries.name starts with V or is null
+WHERE countries.name LIKE 'V%' OR countries.name IS NULL
+-- Order by ascending countries.name
+ORDER BY countries.name;
+
+Repeat once more, but use an INNER JOIN instead of a LEFT JOIN. Note what has changed compared to the FULL JOIN and LEFT JOIN results.
+SELECT countries.name, code, languages.name AS language
+-- From languages
+FROM languages
+  -- Join to countries
+INNER JOIN countries
+    -- Match using code
+    USING (code)
+-- Where countries.name starts with V or is null
+WHERE countries.name LIKE 'V%' OR countries.name IS NULL
+-- Order by ascending countries.name
+ORDER BY countries.name;
+
+Full join (3)
+You'll now explore using two consecutive full joins on the three tables you worked with in the previous two exercises.
+
+Complete a full join with countries on the left and languages on the right.
+Next, full join this result with currencies on the right.
+Use LIKE to choose the Melanesia and Micronesia regions (Hint: 'M%esia').
+Select the fields corresponding to the country name AS country, region, language name AS language, and basic and fractional units of currency.
+
+-- Select fields (with aliases)
+SELECT c1.name AS country, region, l.name AS language,
+       basic_unit, frac_unit
+-- From countries (alias as c1)
+FROM countries AS c1
+  -- Join with languages (alias as l)
+  FULL JOIN languages AS l
+    -- Match on code
+    USING (code)
+  -- Join with currencies (alias as c2)
+  FULL JOIN currencies AS c2
+    -- Match on code
+    USING (code)
+-- Where region like Melanesia and Micronesia
+WHERE region LIKE 'Melanesia' OR region LIKE 'Micronesia';
+
+A table of two cities
+This exercise looks to explore languages potentially and most frequently spoken in the cities of Hyderabad, India and Hyderabad, Pakistan.
+
+Create a CROSS JOIN with cities AS c on the left and languages AS l on the right.
+Make use of LIKE and Hyder% to choose Hyderabad in both countries.
+Select only the city name AS city and language name AS language.
+
+-- Select fields
+SELECT c.name AS city, l.name AS language
+-- From cities (alias as c)
+FROM cities AS c        
+  -- Join to languages (alias as l)
+  CROSS JOIN languages AS l
+-- Where c.name like Hyderabad
+WHERE c.name LIKE 'Hyder%';
+
+Use an INNER JOIN instead of a CROSS JOIN. Think about what the difference will be in the results for this INNER JOIN result and the one for the CROSS JOIN.
+
+-- Select fields
+SELECT c.name as city, l.name as language
+-- From cities (alias as c)
+FROM cities as c   
+INNER JOIN languages AS l
+    -- Match on country code
+ON c.country_code = l.code
+-- Where c.name like Hyderabad
+WHERE c.name like 'Hyder%';
+
+Outer challenge
+Now that you're fully equipped to use OUTER JOINs, try a challenge problem to test your knowledge!
+
+In terms of life expectancy for 2010, determine the names of the lowest five countries and their regions.
+
+Select country name AS country, region, and life expectancy AS life_exp.
+Make sure to use LEFT JOIN, WHERE, ORDER BY, and LIMIT.
+
+-- Select fields
+SELECT c.name AS country, region, life_expectancy AS life_exp
+-- From countries (alias as c)
+FROM countries AS c
+  -- Join to populations (alias as p)
+LEFT JOIN populations as p
+    -- Match on country code
+ON c.code = p.country_code
+-- Focus on 2010
+WHERE year = '2010'
+-- Order by life_exp
+ORDER BY life_exp
+-- Limit to 5 records
+LIMIT 5;
+
+Union
+You have two new tables, economies2010 and economies2015, available to you. The economies table is also included for reference.
+
+Combine the two new tables into one table containing all of the fields in economies2010.
+Sort this resulting single table by country code and then by year, both in ascending order.
+
+-- Select fields from 2010 table
+SELECT * FROM
+  -- From 2010 table
+economies2010
+	-- Set theory clause
+UNION
+-- Select fields from 2015 table
+SELECT * FROM
+  -- From 2015 table
+economies2015
+-- Order by code and year
+ORDER BY code, year;
+
+Union (2)
+UNION can also be used to determine all occurrences of a field across multiple tables. Try out this exercise with no starter code.
+
+Determine all (non-duplicated) country codes in either the cities or the currencies table. The result should be a table with only one field called country_code.
+Sort by country_code in alphabetical order.
+
+-- Select field
+SELECT country_code
+  -- From cities
+FROM cities
+	-- Set theory clause
+UNION
+-- Select field
+SELECT code as country_code
+  -- From currencies
+FROM currencies
+-- Order by country_code
+ORDER BY country_code;
+
+Union all
+As you saw, duplicates were removed from the previous two exercises by using UNION.
+
+To include duplicates, you can use UNION ALL.
+
+Determine all combinations (include duplicates) of country code and year that exist in either the economies or the populations tables. Order by code then year.
+The result of the query should only have two columns/fields. Think about how many records this query should result in.
+You'll use code very similar to this in your next exercise after the video. Make note of this code after completing it.
+
+-- Select fields
+SELECT code, year
+  -- From economies
+  FROM economies
+	-- Set theory clause
+	UNION ALL
+-- Select fields
+SELECT country_code AS code, year
+  -- From populations
+  FROM populations
+-- Order by code, year
+ORDER BY code, year;
+
+Intersect
+UNION ALL will extract all records from two tables, while INTERSECT will only return records that both tables have in common. In this exercise, you will create a similar query as before, however, this time you will look at the records in common for country code and year for the economies and populations tables.
+
+Note the number of records from the result of this query compared to the similar UNION ALL query result of 814 records.
+
+Use INTERSECT to determine the records in common for country code and year for the economies and populations tables.
+Again, order by code and then by year, both in ascending order.
+
+-- Select fields
+SELECT code, year
+  -- From economies
+FROM economies
+	-- Set theory clause
+INTERSECT
+-- Select fields
+SELECT country_code AS code, year
+  -- From populations
+FROM populations
+-- Order by code and year
+ORDER BY code, year;
+
+Intersect (2)
+As you think about major world cities and their corresponding country, you may ask which countries also have a city with the same name as their country name?
+
+Use INTERSECT to answer this question with countries and cities!
+
+-- Select fields
+SELECT name
+  -- From countries
+FROM countries
+	-- Set theory clause
+INTERSECT
+-- Select fields
+SELECT name
+  -- From cities
+FROM cities;
+
+Except
+Get the names of cities in cities which are not noted as capital cities in countries as a single field result.
+
+Note that there are some countries in the world that are not included in the countries table, which will result in some cities not being labeled as capital cities when in fact they are.
+
+Order the resulting field in ascending order.
+Can you spot the city/cities that are actually capital cities which this query misses
+
+-- Select field
+SELECT name
+  -- From cities
+FROM cities
+	-- Set theory clause
+EXCEPT
+-- Select field
+SELECT capital
+  -- From countries
+FROM countries
+-- Order by result
+ORDER BY name;
+
+Except (2)
+Now you will complete the previous query in reverse!
+
+Determine the names of capital cities that are not listed in the cities table.
+
+Order by capital in ascending order.
+The cities table contains information about 236 of the world's most populous cities. The result of your query may surprise you in terms of the number of capital cities that do not appear in this list!
+
+-- Select field
+SELECT capital
+  -- From countries
+FROM countries
+	-- Set theory clause
+EXCEPT
+-- Select field
+SELECT name
+  -- From cities
+FROM cities
+-- Order by ascending capital
+ORDER BY capital;
+
+Semi-join
+You are now going to use the concept of a semi-join to identify languages spoken in the Middle East.
+
+Begin by selecting all country codes in the Middle East as a single field result using SELECT, FROM, and WHERE.
+
+-- Select code
+SELECT code
+  -- From countries
+FROM countries
+-- Where region is Middle East
+WHERE region LIKE 'Middle East';
+
+Below the commented code, select only unique languages by name appearing in the languages table.
+Order the resulting single field table by name in ascending order.
+
+-- Query from step 1:
+/*
+SELECT code
+  FROM countries
+WHERE region = 'Middle East';
+*/
+
+-- Select field
+SELECT DISTINCT name
+  -- From languages
+FROM languages
+-- Order by name
+ORDER BY name;
+
+Combine the previous two queries into one query by adding a WHERE IN statement to the SELECT DISTINCT query to determine the unique languages spoken in the Middle East.
+Order the result by name in ascending order.
+
+-- Query from step 2
+SELECT DISTINCT name
+  FROM languages
+-- Where in statement
+WHERE code in
+  -- Query from step 1
+  -- Subquery
+  (SELECT code
+   FROM countries
+   WHERE region = 'Middle East')
+-- Order by name
+ORDER BY name;
+
+Relating semi-join to a tweaked inner join
+Let's revisit the code from the previous exercise, which retrieves languages spoken in the Middle East.
+
+SELECT DISTINCT name
+FROM languages
+WHERE code IN
+  (SELECT code
+   FROM countries
+   WHERE region = 'Middle East')
+ORDER BY name;
+Sometimes problems solved with semi-joins can also be solved using an inner join.
+
+SELECT languages.name AS language
+FROM languages
+INNER JOIN countries
+ON languages.code = countries.code
+WHERE region = 'Middle East'
+ORDER BY language;
+This inner join isn't quite right. What is missing from this second code block to get it to match with the correct answer produced by the first block?
+
+Possible Answers
+
+HAVING instead of WHERE
+
+!DISTINCT!
+
+UNIQUE
+
+Diagnosing problems using anti-join
+Another powerful join in SQL is the anti-join. It is particularly useful in identifying which records are causing an incorrect number of records to appear in join queries.
+
+You will also see another example of a subquery here, as you saw in the first exercise on semi-joins. Your goal is to identify the currencies used in Oceanian countries!
+
+Begin by determining the number of countries in countries that are listed in Oceania using SELECT, FROM, and WHERE.
+
+-- Select statement
+SELECT COUNT(name)
+  -- From countries
+FROM countries
+-- Where continent is Oceania
+WHERE continent LIKE 'Oceania';
+
+Complete an inner join with countries AS c1 on the left and currencies AS c2 on the right to get the different currencies used in the countries of Oceania.
+Match ON the code field in the two tables.
+Include the country code, country name, and basic_unit AS currency.
+Observe the query result and make note of how many different countries are listed here.
+
+-- Select fields (with aliases)
+SELECT c1.code, c1.name, basic_unit AS currency
+  -- From countries (alias as c1)
+FROM countries AS c1
+  	-- Join with currencies (alias as c2)
+INNER JOIN currencies AS c2
+    -- Match on code
+USING(code)
+-- Where continent is Oceania
+WHERE continent LIKE 'Oceania';
+
+Note that not all countries in Oceania were listed in the resulting inner join with currencies. Use an anti-join to determine which countries were not included!
+
+Use NOT IN and (SELECT code FROM currencies) as a subquery to get the country code and country name for the Oceanian countries that are not included in the currencies table.
+
+-- Select fields
+SELECT code, name
+  -- From Countries
+FROM Countries
+  -- Where continent is Oceania
+WHERE continent LIKE 'Oceania'
+  	-- And code not in
+AND code NOT in
+  	-- Subquery
+(SELECT code FROM currencies);
+
+Set theory challenge
+Congratulations! You've now made your way to the challenge problem for this third chapter. Your task here will be to incorporate two of UNION/UNION ALL/INTERSECT/EXCEPT to solve a challenge involving three tables.
+
+In addition, you will use a subquery as you have in the last two exercises! This will be great practice as you hop into subqueries more in Chapter 4!
+
+Identify the country codes that are included in either economies or currencies but not in populations.
+Use that result to determine the names of cities in the countries that match the specification in the previous instruction.
+
+-- Select the city name
+SELECT name
+  -- Alias the table where city name resides
+FROM cities AS c1
+  -- Choose only records matching the result of multiple set theory clauses
+  WHERE country_code IN
+(
+    -- Select appropriate field from economies AS e
+    SELECT e.code
+    FROM economies AS e
+    -- Get all additional (unique) values of the field from currencies AS c2  
+    UNION
+    SELECT c2.code
+    FROM currencies AS c2
+    -- Exclude those appearing in populations AS p
+    EXCEPT
+    SELECT p.country_code
+    FROM populations AS p
+);
+
+Subquery inside where
+You'll now try to figure out which countries had high average life expectancies (at the country level) in 2015.
+
+Begin by calculating the average life expectancy across all countries for 2015.
+
+-- Select average life_expectancy
+SELECT AVG(life_expectancy)
+  -- From populations
+FROM populations
+-- Where year is 2015
+WHERE year = 2015;
+
+Recall that you can use SQL to do calculations for you. Suppose we wanted only records that were above 1.15 * 100 in terms of life expectancy for 2015:
+
+SELECT *
+  FROM populations
+WHERE life_expectancy > 1.15 * 100
+  AND year = 2015;
+Select all fields from populations with records corresponding to larger than 1.15 times the average you calculated in the first task for 2015. In other words, change the 100 in the example above with a subquery.
+
+-- Select fields
+SELECT *
+  -- From populations
+  FROM populations
+-- Where life_expectancy is greater than
+WHERE life_expectancy  > 1.15 *
+  -- 1.15 * subquery
+  (SELECT AVG(life_expectancy)
+   FROM populations
+   WHERE year = 2015)
+  AND year = 2015;
+  
+  Subquery inside where (2)
+Use your knowledge of subqueries in WHERE to get the urban area population for only capital cities.
+
+Make use of the capital field in the countries table in your subquery.
+Select the city name, country code, and urban area population fields.
+
+-- Select fields
+SELECT cities.name, country_code, urbanarea_pop
+  -- From cities
+  FROM cities
+-- Where city name in the field of capital cities
+WHERE name IN
+  -- Subquery
+  (Select  capital
+   FROM countries)
+ORDER BY urbanarea_pop DESC;
+
+Subquery inside select
+In this exercise, you'll see how some queries can be written using either a join or a subquery.
+
+You have seen previously how to use GROUP BY with aggregate functions and an inner join to get summarized information from multiple tables.
+
+The code given in the first query selects the top nine countries in terms of number of cities appearing in the cities table. Recall that this corresponds to the most populous cities in the world. Your task will be to convert the second query to get the same result as the provided code.
+
+Submit the code to view the result of the provided query.
+
+SELECT countries.name AS country, COUNT(*) AS cities_num
+  FROM cities
+    INNER JOIN countries
+    ON countries.code = cities.country_code
+GROUP BY country
+ORDER BY cities_num DESC, country
+LIMIT 9;
+
+
+SELECT countries.name AS country,
+  (SELECT COUNT(*)
+   FROM cities
+   WHERE countries.code = cities.country_code) AS cities_num
+FROM countries
+ORDER BY cities_num DESC, country
+LIMIT 9;
+
+Convert the GROUP BY code to use a subquery inside of SELECT by filling in the blanks to get a result that matches the one given using the GROUP BY code in the first query.
+Again, sort the result by cities_num descending and then by country ascending.
+
+/*
+SELECT countries.name AS country, COUNT(*) AS cities_num
+  FROM cities
+    INNER JOIN countries
+    ON countries.code = cities.country_code
+GROUP BY country
+ORDER BY cities_num DESC, country
+LIMIT 9;
+*/
+
+SELECT countries.name AS country,
+  -- Subquery
+  (SELECT COUNT(*)
+   FROM cities
+   WHERE countries.code = cities.country_code) AS cities_num
+FROM countries
+ORDER BY cities_num DESC, country
+LIMIT 9;
+
+Subquery inside from
+The last type of subquery you will work with is one inside of FROM.
+
+You will use this to determine the number of languages spoken for each country, identified by the country's local name! (Note this may be different than the name field and is stored in the local_name field.)
+
+Begin by determining for each country code how many languages are listed in the languages table using SELECT, FROM, and GROUP BY.
+Alias the aggregated field as lang_num.
+
+-- Select fields (with aliases)
+SELECT COUNT(*) AS lang_num, code
+  -- From languages
+  FROM languages
+-- Group by code
+GROUP BY code;
+
+Include the previous query (aliased as subquery) as a subquery in the FROM clause of a new query.
+Select the local name of the country from countries.
+Also, select lang_num from subquery.
+Make sure to use WHERE appropriately to match code in countries and in subquery.
+Sort by lang_num in descending order.
+
+-- Select fields
+SELECT local_name, subquery.lang_num
+  -- From countries
+  FROM countries,
+  	-- Subquery (alias as subquery)
+  	(SELECT code, COUNT(*) AS lang_num
+  	 FROM languages
+  	 GROUP BY code) AS subquery
+  -- Where codes match
+  WHERE countries.code = subquery.code
+-- Order by descending number of languages
+ORDER BY lang_num DESC;
+
+Advanced subquery
+You can also nest multiple subqueries to answer even more specific questions.
+
+In this exercise, for each of the six continents listed in 2015, you'll identify which country had the maximum inflation rate, and how high it was, using multiple subqueries. The table result of your final query should look something like the following, where anything between < > will be filled in with appropriate values:
+
++------------+---------------+-------------------+
+| name       | continent     | inflation_rate    |
+|------------+---------------+-------------------|
+| <country1> | North America | <max_inflation1>  |
+| <country2> | Africa        | <max_inflation2>  |
+| <country3> | Oceania       | <max_inflation3>  |
+| <country4> | Europe        | <max_inflation4>  |
+| <country5> | South America | <max_inflation5>  |
+| <country6> | Asia          | <max_inflation6>  |
++------------+---------------+-------------------+
+Again, there are multiple ways to get to this solution using only joins, but the focus here is on showing you an introduction into advanced subqueries.
+
+Create an INNER JOIN with countries on the left and economies on the right with USING, without aliasing your tables or columns.
+Retrieve the country's name, continent, and inflation rate for 2015.
+
+-- Select fields
+SELECT name, continent, inflation_rate
+  -- From countries
+  FROM countries
+  	-- Join to economies
+  	INNER JOIN economies
+    -- Match on code
+    USING(code)
+-- Where year is 2015
+WHERE year = 2015;
+
+Select the maximum inflation rate in 2015 AS max_inf grouped by continent using the previous step's query as a subquery in the FROM clause.
+
+Thus, in your subquery you should:
+Create an inner join with countries on the left and economies on the right with USING (without aliasing your tables or columns).
+Retrieve the country name, continent, and inflation rate for 2015.
+Alias the subquery as subquery.
+This will result in the six maximum inflation rates in 2015 for the six continents as one field table. Make sure to not include continent in the outer SELECT statement.
+
+-- Select the maximum inflation rate as max_inf
+SELECT MAX(inflation_rate) AS max_inf
+  -- Subquery using FROM (alias as subquery)
+  FROM (
+      SELECT name, continent, inflation_rate
+      FROM countries
+      INNER JOIN economies
+      USING (code)
+      WHERE year = 2015) AS subquery
+-- Group by continent
+GROUP BY continent;
+
+
+Now it's time to append your second query to your first query using AND and IN to obtain the name of the country, its continent, and the maximum inflation rate for each continent in 2015.
+For the sake of practice, change all joining conditions to use ON instead of USING.
+
+-- Select fields
+SELECT name, continent, inflation_rate
+  -- From countries
+  FROM countries
+	-- Join to economies
+	INNER JOIN economies
+	-- Match on code
+  ON countries.code = economies.code
+  -- Where year is 2015
+  WHERE year = 2015
+    -- And inflation rate in subquery (alias as subquery)
+    AND  inflation_rate IN (
+        SELECT MAX(inflation_rate) AS max_inf
+        FROM (
+             SELECT name, continent, inflation_rate
+             FROM countries
+             INNER JOIN economies
+             ON countries.code = economies.code
+             WHERE year = 2015) AS subquery
+      -- Group by continent
+        GROUP BY continent);
+        
+        Subquery challenge
+Let's test your understanding of the subqueries with a challenge problem! Use a subquery to get 2015 economic data for countries that do not have
+
+gov_form of 'Constitutional Monarchy' or
+'Republic' in their gov_form.
+Here, gov_form stands for the form of the government for each country. Review the different entries for gov_form in the countries table.
+
+Select the country code, inflation rate, and unemployment rate.
+Order by inflation rate ascending.
+Do not use table aliasing in this exercise.
+
+-- Select fields
+SELECT code, inflation_rate, unemployment_rate
+  -- From economies
+  FROM economies
+  -- Where year is 2015 and code is not in
+  WHERE year = 2015 AND code NOT IN
+  	-- Subquery
+  	(SELECT code
+  	 FROM countries
+  	 WHERE (gov_form = 'Constitutional Monarchy' OR gov_form LIKE '%Republic%'))
+-- Order by inflation rate
+ORDER BY inflation_rate;
+
+Final challenge
+Welcome to the end of the course! The next three exercises will test your knowledge of the content covered in this course and apply many of the ideas you've seen to difficult problems. Good luck!
+
+Read carefully over the instructions and solve them step-by-step, thinking about how the different clauses work together.
+
+In this exercise, you'll need to get the country names and other 2015 data in the economies table and the countries table for Central American countries with an official language.
+
+Select unique country names. Also select the total investment and imports fields.
+Use a left join with countries on the left. (An inner join would also work, but please use a left join here.)
+Match on code in the two tables AND use a subquery inside of ON to choose the appropriate languages records.
+Order by country name ascending.
+Use table aliasing but not field aliasing in this exercise.
+
+-- Select fields
+SELECT DISTINCT c.name, e.total_investment, e.imports
+  -- From table (with alias)
+  FROM countries AS c
+    -- Join with table (with alias)
+    LEFT JOIN economies AS e
+      -- Match on code
+      ON (c.code = e.code
+      -- and code in Subquery
+        AND c.code IN (
+          SELECT l.code
+          FROM languages AS l
+          WHERE official = 'true'
+        ) )
+  -- Where region and year are correct
+  WHERE region = 'Central America' AND year = 2015
+-- Order by field
+ORDER BY c.name;
+
+Final challenge (2)
+Whoofta! That was challenging, huh?
+
+Let's ease up a bit and calculate the average fertility rate for each region in 2015.
+
+Include the name of region, its continent, and average fertility rate aliased as avg_fert_rate.
+Sort based on avg_fert_rate ascending.
+Remember that you'll need to GROUP BY all fields that aren't included in the aggregate function of SELECT.
+
+-- Select fields
+SELECT c1.region, c1.continent, AVG(fertility_rate) AS avg_fert_rate
+  -- From left table
+  FROM countries AS c1
+    -- Join to right table
+    INNER JOIN populations AS p
+      -- Match on join condition
+      ON c1.code = p.country_code
+  -- Where specific records matching some condition
+  WHERE p.year = 2015
+-- Group appropriately
+GROUP BY c1.region, c1.continent
+-- Order appropriately
+ORDER BY avg_fert_rate;
+
+Final challenge (3)
+Welcome to the last challenge problem. By now you're a query warrior! Remember that these challenges are designed to take you to the limit to solidify your SQL knowledge! Take a deep breath and solve this step-by-step.
+
+You are now tasked with determining the top 10 capital cities in Europe and the Americas in terms of a calculated percentage using city_proper_pop and metroarea_pop in cities.
+
+Do not use table aliasing in this exercise.
+
+Select the city name, country code, city proper population, and metro area population.
+Calculate the percentage of metro area population composed of city proper population for each city in cities, aliased as city_perc.
+Focus only on capital cities in Europe and the Americas in a subquery.
+Make sure to exclude records with missing data on metro area population.
+Order the result by city_perc descending.
+Then determine the top 10 capital cities in Europe and the Americas in terms of this city_perc percentage.
+
+-- Select fields
+SELECT name, country_code, city_proper_pop, metroarea_pop,  
+      -- Calculate city_perc
+      city_proper_pop / metroarea_pop * 100 AS city_perc
+  -- From appropriate table
+  FROM cities
+  -- Where 
+  WHERE name IN
+    -- Subquery
+    (SELECT capital
+     FROM countries
+     WHERE (continent = 'Europe'
+        OR continent LIKE '%America'))
+  AND (city_proper_pop / metroarea_pop * 100) IS NOT NULL
+-- Order appropriately
+ORDER BY city_perc DESC
+-- Limit amount
+LIMIT 10;
+
+
+
+
