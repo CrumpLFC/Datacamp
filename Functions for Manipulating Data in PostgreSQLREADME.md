@@ -379,6 +379,324 @@ SELECT
   REPLACE(title, ' ', '_') AS title
 FROM film; 
 
+Determining the length of strings
+Determining the number of characters in a string is something that you will use frequently when working with data in a SQL database. Many situations will require you to find the length of a string stored in your database. For example, you may need to limit the number of characters that are displayed in an application or you may need to ensure that a column in your dataset contains values that are all the same length. In this example, we are going to determine the length of the description column in the film table of the DVD Rental database.
+
+Select the title and description columns from the film table.
+Find the number of characters in the description column with the alias desc_len.
+
+Truncating strings
+In the previous exercise, you calculated the length of the description column and noticed that the number of characters varied but most of the results were over 75 characters. There will be many times when you need to truncate a text column to a certain length to meet specific criteria for an application. In this exercise, we will practice getting the first 50 characters of the description column.
+
+Select the first 50 characters of the description column with the alias short_desc
+
+SELECT 
+  -- Select the first 50 characters of description
+  LEFT(description, 50) AS short_desc
+FROM 
+  film AS f; 
+  
+  Extracting substrings from text data
+In this exercise, you are going to practice how to extract substrings from text columns. The Sakila database contains the address table which stores the street address for all the rental store locations. You need a list of all the street names where the stores are located but the address column also contains the street number. You'll use several functions that you've learned about in the video to manipulate the address column and return only the street address.
+
+Extract only the street address without the street number from the address column.
+Use functions to determine the starting and ending position parameters.
+
+SELECT 
+  -- Select only the street name from the address table
+  SUBSTRING(address FROM POSITION(' ' IN address)+1 FOR CHAR_LENGTH(address))
+FROM 
+  address;
+  
+  Combining functions for string manipulation
+In the next example, we are going to break apart the email column from the customer table into three new derived fields. Parsing a single column into multiple columns can be useful when you need to work with certain subsets of data. Email addresses have embedded information stored in them that can be parsed out to derive additional information about our data. For example, we can use the techniques we learned about in the video to determine how many of our customers use an email from a specific domain.
+
+Extract the characters to the left of the @ of the email column in the customer table and alias it as username.
+Now use SUBSTRING to extract the characters after the @ of the email column and alias the new derived field as domain.
+
+SELECT
+  -- Extract the characters to the left of the '@'
+  left(email, POSITION('@' IN email)-1) AS username,
+  -- Extract the characters to the right of the '@'
+  SUBSTRING(email FROM POSITION('@' IN email)+1 FOR CHAR_LENGTH(email)) AS domain
+FROM customer;
+
+Padding
+Padding strings is useful in many real-world situations. Earlier in this course, we learned about string concatenation and how to combine the customer's first and last name separated by a single blank space and also combined the customer's full name with their email address.
+
+The padding functions that we learned about in the video are an alternative approach to do this task. To use this approach, you will need to combine and nest functions to determine the length of a string to produce the desired result. Remember when calculating the length of a string you often need to adjust the integer returned to get the proper length or position of a string.
+
+Let's revisit the string concatenation exercise but use padding functions.
+
+Add a single space to the end or right of the first_name column using a padding function.
+Use the || operator to concatenate the padded first_name to the last_name column.
+
+-- Concatenate the padded first_name and last_name 
+SELECT 
+	RPAD(first_name, LENGTH(first_name)+1) || last_name AS full_name
+FROM customer;
+
+Now add a single space to the left or beginning of the last_name column using a different padding function than the first step.
+Use the || operator to concatenate the first_name column to the padded last_name.
+
+-- Concatenate the first_name and last_name 
+SELECT 
+	first_name || LPAD(last_name, LENGTH(last_name)+1) AS full_name
+FROM customer; 
+
+Add a single space to the right or end of the first_name column.
+Add the characters < to the right or end of last_name column.
+Finally, add the characters > to the right or end of the email column.
+
+-- Concatenate the first_name and last_name 
+SELECT 
+	RPAD(first_name, LENGTH(first_name)+1) 
+    || RPAD(last_name, LENGTH(last_name)+2, ' <') 
+    || RPAD(email, LENGTH(email)+1, '>') AS full_email
+FROM customer; 
+
+The TRIM function
+In this exercise, we are going to revisit and combine a couple of exercises from earlier in this chapter. If you recall, you used the LEFT() function to truncate the description column to 50 characters but saw that some words were cut off and/or had trailing whitespace. We can use trimming functions to eliminate the whitespace at the end of the string after it's been truncated.
+
+Convert the film category name to uppercase and use the CONCAT() concatenate it with the title.
+Truncate the description to the first 50 characters and make sure there is no leading or trailing whitespace after truncating.
+
+-- Concatenate the uppercase category name and film title
+SELECT 
+  CONCAT(UPPER(c.name), ': ', title) AS film_category, 
+  -- Truncate the description remove trailing whitespace
+  TRIM(LEFT(description, 50)) AS film_desc
+FROM 
+  film AS f 
+  INNER JOIN film_category AS fc 
+  	ON f.film_id = fc.film_id 
+  INNER JOIN category AS c 
+  	ON fc.category_id = c.category_id;
+	
+	Putting it all together
+In this exercise, we are going to use the film and category tables to create a new field called film_category by concatenating the category name with the film's title. You will also practice how to truncate text fields like the film table's description column without cutting off a word.
+
+To accomplish this we will use the REVERSE() function to help determine the position of the last whitespace character in the description before we reach 50 characters. This technique can be used to determine the position of the last character that you want to truncate and ensure that it is less than or equal to 50 characters AND does not cut off a word.
+
+This is an advanced technique but I know you can do it! Let's dive in.
+
+Get the first 50 characters of the description column
+Determine the position of the last whitespace character of the truncated description column and subtract it from the number 50 as the second parameter in the first function above.
+
+SELECT 
+  UPPER(c.name) || ': ' || f.title AS film_category, 
+  -- Truncate the description without cutting off a word
+  LEFT(description, 50 - 
+    -- Subtract the position of the first whitespace character
+    POSITION(
+      ' ' IN REVERSE(LEFT(description, 50))
+    )
+  ) 
+FROM 
+  film AS f 
+  INNER JOIN film_category AS fc 
+  	ON f.film_id = fc.film_id 
+  INNER JOIN category AS c 
+  	ON fc.category_id = c.category_id;
+	
+A review of the LIKE operator
+The LIKE operator allows us to filter our queries by matching one or more characters in text data. By using the % wildcard we can match one or more characters in a string. This is useful when you want to return a result set that matches certain characteristics and can also be very helpful during exploratory data analysis or data cleansing tasks.
+
+Let's explore how different usage of the % wildcard will return different results by looking at the film table of the Sakila DVD Rental database.
+
+Select all columns for all records that begin with the word GOLD.
+
+-- Select all columns
+SELECT *
+FROM film
+-- Select only records that begin with the word 'GOLD'
+WHERE title LIKE 'GOLD%';
+
+Now select all records that end with the word GOLD.
+
+SELECT *
+FROM film
+-- Select only records that end with the word 'GOLD'
+WHERE title LIKE '%GOLD';
+
+Finally, select all records that contain the word 'GOLD'.
+
+SELECT *
+FROM film
+-- Select only records that contain the word 'GOLD'
+WHERE title LIKE '%GOLD%';
+
+What is a tsvector?
+You saw how to convert strings to tsvector and tsquery in the video and, in this exercise, we are going to dive deeper into what these functions actually return after converting a string to a tsvector. In this example, you will convert a text column from the film table to a tsvector and inspect the results. Understanding how full-text search works is the first step in more advanced machine learning and data science concepts like natural language processing.
+
+-- Select the film description as a tsvector
+SELECT to_tsvector(description)
+FROM film;
+
+Basic full-text search
+Searching text will become something you do repeatedly when building applications or exploring data sets for data science. Full-text search is helpful when performing exploratory data analysis for a natural language processing model or building a search feature into your application.
+
+In this exercise, you will practice searching a text column and match it against a string. The search will return the same result as a query that uses the LIKE operator with the % wildcard at the beginning and end of the string, but will perform much better and provide you with a foundation for more advanced full-text search queries. Let's dive in.
+
+Select the title and description columns from the film table.
+Perform a full-text search on the title column for the word elf.
+
+-- Select the title and description
+SELECT title, description
+FROM film
+-- Convert the title to a tsvector and match it against the tsquery 
+WHERE to_tsvector(title) @@ to_tsquery('Elf');
+
+User-defined data types
+ENUM or enumerated data types are great options to use in your database when you have a column where you want to store a fixed list of values that rarely change. Examples of when it would be appropriate to use an ENUM include days of the week and states or provinces in a country.
+
+Another example can be the directions on a compass (i.e., north, south, east and west.) In this exercise, you are going to create a new ENUM data type called compass_position.
+
+Create a new enumerated data type called compass_position.
+Use the four positions of a compass as the values.
+
+-- Create an enumerated data type, compass_position
+CREATE type compass_position AS ENUM (
+  	-- Use the four cardinal directions
+  	'north', 
+  	'south',
+  	'west', 
+  	'east'
+);
+
+Getting info about user-defined data types
+The Sakila database has a user-defined enum data type called mpaa_rating. The rating column in the film table is an mpaa_rating type and contains the familiar rating for that film like PG or R. This is a great example of when an enumerated data type comes in handy. Film ratings have a limited number of standard values that rarely change.
+
+When you want to learn about a column or data type in your database the best place to start is the INFORMATION_SCHEMA. You can find information about the rating column that can help you learn about the type of data you can expect to find. For enum data types, you can also find the specific values that are valid for a particular enum by looking in the pg_enum system table. Let's dive into the exercises and learn more.
+
+User-defined functions in Sakila
+If you were running a real-life DVD Rental store, there are many questions that you may need to answer repeatedly like whether a film is in stock at a particular store or the outstanding balance for a particular customer. These types of scenarios are where user-defined functions will come in very handy. The Sakila database has several user-defined functions pre-defined. These functions are available out-of-the-box and can be used in your queries like many of the built-in functions we've learned about in this course.
+
+In this exercise, you will build a query step-by-step that can be used to produce a report to determine which film title is currently held by which customer using the inventory_held_by_customer() function.
+
+Select the title and inventory_id columns from the film and inventory tables in the database.
+
+-- Select the film title and inventory ids
+SELECT 
+	f.title, 
+    i.inventory_id
+FROM film AS f 
+	-- Join the film table to the inventory table
+	INNER JOIN inventory AS i ON f.film_id=i.film_id 
+	
+inventory_id is currently held by a customer and alias the column as held_by_cust
+-- Select the film title, rental and inventory ids
+SELECT 
+	f.title, 
+    i.inventory_id,
+    -- Determine whether the inventory is held by a customer
+    inventory_held_by_customer(i.inventory_id) AS held_by_cust
+FROM film as f 
+	-- Join the film table to the inventory table
+	INNER JOIN inventory AS i ON f.film_id=i.film_id 
+	
+Now filter your query to only return records where the inventory_held_by_customer() function returns a non-null value.
+-- Select the film title and inventory ids
+SELECT 
+	f.title, 
+    i.inventory_id,
+    -- Determine whether the inventory is held by a customer
+    inventory_held_by_customer(i.inventory_id) as held_by_cust
+FROM film as f 
+	INNER JOIN inventory AS i ON f.film_id=i.film_id 
+WHERE
+	-- Only include results where the held_by_cust is not null
+    inventory_held_by_customer(i.inventory_id) IS NOT NULL
+    
+Enabling extensions
+Before you can use the capabilities of an extension it must be enabled. As you have previously learned, most PostgreSQL distributions come pre-bundled with many useful extensions to help extend the native features of your database. You will be working with fuzzystrmatch and pg_trgm in upcoming exercises but before you can practice using the capabilities of these extensions you will need to first make sure they are enabled in our database. In this exercise you will enable the pg_trgm extension and confirm that the fuzzystrmatch extension, which was enabled in the video, is still enabled by querying the pg_extension system table.
+
+Enable the pg_trgm extension
+
+-- Enable the pg_trgm extension
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+Now confirm that both fuzzystrmatch and pg_trgm are enabled by selecting all rows from the appropriate system table.
+
+-- Select all rows extensions
+SELECT *
+FROM pg_extension;
+
+
+Measuring similarity between two strings
+Now that you have enabled the fuzzystrmatch and pg_trgm extensions you can begin to explore their capabilities. First, we will measure the similarity between the title and description from the film table of the Sakila database.
+
+Select the film title and description.
+Calculate the similarity between the title and description.
+
+-- Select the title and description columns
+SELECT 
+  title, 
+  description, 
+  -- Calculate the similarity
+  similarity(title, description)
+FROM 
+  film
+  
+Levenshtein distance examples
+Now let's take a closer look at how we can use the levenshtein function to match strings against text data. If you recall, the levenshtein distance represents the number of edits required to convert one string to another string being compared.
+
+In a search application or when performing data analysis on any data that contains manual user input, you will always want to account for typos or incorrect spellings. The levenshtein function provides a great method for performing this task. In this exercise, we will perform a query against the film table using a search string with a misspelling and use the results from levenshtein to determine a match. Let's check it out.
+
+Select the film title and film description.
+Calculate the levenshtein distance for the film title with the string JET NEIGHBOR.
+
+-- Select the title and description columns
+SELECT  
+  title, 
+  description, 
+  -- Calculate the levenshtein distance
+  levenshtein(title, 'JET NEIGHBOR') AS distance
+FROM 
+  film
+ORDER BY 3
+
+
+Putting it all together
+In this exercise, we are going to use many of the techniques and concepts we learned throughout the course to generate a data set that we could use to predict whether the words and phrases used to describe a film have an impact on the number of rentals.
+
+First, you need to create a tsvector from the description column in the film table. You will match against a tsquery to determine if the phrase "Astounding Drama" leads to more rentals per month. Next, create a new column using the similarity function to rank the film descriptions based on this phrase.
+
+Select the title and description for all DVDs from the film table.
+Perform a full-text search by converting the description to a tsvector and match it to the phrase 'Astounding & Drama' using a tsquery in the WHERE clause.
+
+-- Select the title and description columns
+SELECT  
+  title, 
+  description 
+FROM 
+  film
+WHERE 
+  -- Match "Astounding Drama" in the description
+  to_tsvector(description) @@
+  to_tsquery('Astounding & Drama');
+  
+ Add a new column that calculates the similarity of the description with the phrase 'Astounding Drama'.
+Sort the results by the new similarity column in descending order.
+
+SELECT 
+  title, 
+  description, 
+  -- Calculate the similarity
+  similarity(description, 'Astounding Drama')
+FROM 
+  film 
+WHERE 
+  to_tsvector(description) @@ 
+  to_tsquery('Astounding & Drama') 
+ORDER BY 
+	similarity(description, 'Astounding Drama') DESC;
+	
+	
+
+
+	
+
 
 
 
