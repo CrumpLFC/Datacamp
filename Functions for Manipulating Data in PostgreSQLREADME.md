@@ -325,5 +325,62 @@ WHERE
   -- Use an INTERVAL for the upper bound of the rental_date 
   r.rental_date BETWEEN CAST('2005-05-01' AS DATE) 
   AND CAST('2005-05-01' AS DATE) + INTERVAL '90 day';
+  
+  Concatenating strings
+In this exercise and the ones that follow, we are going to derive new fields from columns within the customer and film tables of the DVD rental database.
+
+We'll start with the customer table and create a query to return the customers name and email address formatted such that we could use it as a "To" field in an email script or program. This format will look like the following:
+
+Brian Piccolo <bpiccolo@datacamp.com>
+
+In the first step of the exercise, use the || operator to do the string concatenation and in the second step, use the CONCAT() functions.
+
+Concatenate the first_name and last_name columns separated by a single space followed by email surrounded by < and >.
+-- Concatenate the first_name and last_name and email
+-- Concatenate the first_name and last_name and email 
+SELECT first_name || ' ' || last_name || ' <' || email || '>' AS full_email 
+FROM customer
+
+Now use the CONCAT() function to do the same operation as the previous step.
+
+-- Concatenate the first_name and last_name and email
+SELECT CONCAT(first_name, ' ', last_name,  ' <', email, '>') AS full_email 
+FROM customer
+
+Changing the case of string data
+Now you are going to use the film and category tables to create a new field called film_category by concatenating the category name with the film's title. You will also format the result using functions you learned about in the video to transform the case of the fields you are selecting in the query; for example, the INITCAP() function which converts a string to title case.
+
+Convert the film category name to uppercase.
+Convert the first letter of each word in the film's title to upper case.
+Concatenate the converted category name and film title separated by a colon.
+Convert the description column to lowercase.
+
+SELECT 
+  -- Concatenate the category name to coverted to uppercase
+  -- to the film title converted to title case
+  UPPER(c.name)  || ': ' || INITCAP(f.title) AS film_category, 
+  LOWER(f.description) AS description
+FROM 
+  film AS f 
+  INNER JOIN film_category AS fc 
+  	ON f.film_id = fc.film_id 
+  INNER JOIN category AS c 
+  	ON fc.category_id = c.category_id;
+	
+Replacing string data
+Sometimes you will need to make sure that the data you are extracting does not contain any whitespace. There are many different approaches you can take to cleanse and prepare your data for these situations. A common technique is to replace any whitespace with an underscore.
+
+In this example, we are going to practice finding and replacing whitespace characters in the title column of the film table using the REPLACE() function.
+
+Replace all whitespace with an underscore.
+
+SELECT 
+  -- Replace whitespace in the film title with an underscore
+  REPLACE(title, ' ', '_') AS title
+FROM film; 
+
+
+
+
 
 
